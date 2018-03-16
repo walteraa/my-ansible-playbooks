@@ -1,0 +1,49 @@
+#Playbook to configure k8s minion nodes and join it in a Cluster
+
+- hosts: k8s-minions
+  remote_user: ubuntu
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+      become: true
+    - name: Add apt-key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+      become: true
+    - name: Add kubernetes repository
+      apt_repository:
+        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+      become: true
+    - name: Update repository after add kubernetes repo
+      apt:
+        update_cache: yes
+      become: true
+    - name: Install docker
+      apt:
+        name: docker.io
+        state: present
+      become: true
+    - name: Install kubelet
+      apt:
+        name: kubelet
+        state: present
+      become: true
+    - name: Install kubeadm
+      apt:
+        name: kubeadm
+        state: present
+      become: true
+
+#Cleaning up the previous configuration if it exists
+    - name: Reset previous kubernetes init
+      command: kubeadm reset
+      become: true  
+
+#Joining a cluster
+    # (walteraa) TODO: Make it use the public IP of cluster by running kubectl proxy.
+    - name: Join in k8s cluster
+      command: kubeadm join --token f9b3ff.fcb6cb5f9bb158ee 10.11.4.109:6443 --discovery-token-unsafe-skip-ca-verification
+      become: true
