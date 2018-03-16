@@ -1,0 +1,90 @@
+#Playbook to configure k8s masters using OpenStack as cloud provider
+
+- hosts: k8s-masters
+  remote_user: ubuntu
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+      become: true
+    - name: Add apt-key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+      become: true
+    - name: Add kubernetes repository
+      apt_repository:
+        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+      become: true
+    - name: Update repository after add kubernetes repo
+      apt:
+        update_cache: yes
+      become: true
+    - name: Install docker
+      apt:
+        name: docker.io
+        state: present
+      become: true
+    - name: Install kubelet
+      apt:
+        name: kubelet
+        state: present
+      become: true
+    - name: Install kubeadm
+      apt:
+        name: kubeadm
+        state: present
+      become: true
+    - name: Install kubectl
+      apt:
+        name: kubectl
+        state: present
+      become: true
+
+#Cleaning up the previous configuration if it exists
+    - name: Reset previous kubernetes init
+      command: kubeadm reset
+      become: true  
+    - name: Removing kubernetes workspace
+      shell: rm -rf $HOME/.kube
+    - name: Removing cloud config
+      command: rm -rf /etc/kuberntes/cloud-config
+      become: true
+    - name: Removing master config
+      command: rm -rf /etc/kubernetes/master-config
+      become: true
+    - name: Undo sed to add external cloud provider line
+      shell: sed -i 's/KUBELET_KUBECONFIG_ARGS=--cloud-provider=external/KUBELET_KUBECONFIG_ARGS= /g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf 
+      become: true
+
+#Configuring the kubernetes
+    - name: Transfering Master configuration file
+      copy:
+        src: master-conf 
+        dest: /etc/kubernetes/master-conf
+      become: true
+    - name: Transfering OpenStack cloud configuration file
+      copy:
+        src: cloud-config
+        dest: /etc/kubernetes/cloud-config
+      become: true
+    - name: Add external cloud provider flag in kubelet config file
+      shell: sed -i 's/KUBELET_KUBECONFIG_ARGS=/KUBELET_KUBECONFIG_ARGS=--cloud-provider=external /g' /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+      become: true
+    - name: Init kubernetes master
+      command: kubeadm init --config /etc/kubernetes/master-conf
+      become: true
+    - name: Create kubernetes workspace
+      shell: mkdir -p $HOME/.kube
+    - name: Copy kubeconfig file 
+      shell: sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    - name: Change user owner
+      shell: sudo chown $(id \-u):$(id \-g) $HOME/.kube/config 
+    - name: Init Calico as overlay network
+      command: kubectl apply -f https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml
+    - name: Create cloud-config ConfigMap resource
+      command: kubectl create configmap cloud-config --from-file /etc/kubernetes/cloud-config -n kube-system
+    - name: Create OpenStack cloud controller manager Pod resource
+      command: kubectl create -f https://raw.githubusercontent.com/dims/openstack-cloud-controller-manager/master/manifests/controller-manager/openstack-cloud-controller-manager-ds.yaml
+
