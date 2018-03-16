@@ -1,0 +1,12 @@
+[Global]
+region=RegionOne
+username=$OPENSTACK_LOGIN
+password=$OPENSTACK_PASSWORD
+auth-url=$KEYSTONE_ENDPOINT
+tenant-id=$PROJECT_ID
+domain-id=$DOMAIN_ID
+[LoadBalancer]
+subnet-id=$SERVICE_SUBNET_ID
+floating-network-id=$FLOAT_IP_NETWORK_ID
+[BlockStorage]
+bs-version=v2
