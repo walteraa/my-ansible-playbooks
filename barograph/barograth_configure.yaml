@@ -1,0 +1,49 @@
+#Playbook to provision barograph in a VM
+#
+- hosts: barograph-vms
+  remote_user: ubuntu
+  tasks:
+#Updating repository and installing docker stuff
+    - name: Update apt
+      apt:
+        update_cache: yes
+      become: true
+    - name: Install docker
+      apt:
+        name: docker.io
+        state: present
+      become: true
+    - name: Get docke-compose
+      shell: curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+      become: true
+    - name: Add exec permission in docker-compose
+      command: chmod +x /usr/local/bin/docker-compose
+      become: true
+    - name: Check running
+      command: docker-compose --version
+#Cleaning up previous resources
+#
+    - name: Remove previous docker-compose.yaml
+      shell: rm -rf docker-compose.yaml
+      become: true
+#Sending resources
+#
+    - name: Add docker-compose.yaml file
+      copy:
+        src: docker-compose.yaml
+        dest: /home/ubuntu/docker-compose.yaml
+#kill containers
+    - name: Kill containers
+      command: docker-compose kill
+      become: true
+    - name: Remove images
+      command: docker-compose down --rmi all
+      become: true
+#Run docker-compose
+#
+    - name: Pull images
+      command: docker-compose pull
+      become: true
+    - name: Start containers
+      command: docker-compose up -d
+      become: true
