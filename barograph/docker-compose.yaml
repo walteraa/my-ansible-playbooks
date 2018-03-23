@@ -19,5 +19,11 @@ services:
       - MONGODB_PORT=27017
     ports:
       - 8080:8080
-      
-
+  barograph_screen:
+    image: walteraa/barograph_screen:latest
+    container_name: "barograph_screen"
+    environment:
+      - BACKEND_PORT=8080
+      - BACKEND_HOST=barograph
+    ports:
+      - 9000:9000
