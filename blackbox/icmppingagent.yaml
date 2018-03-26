@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: icmppingagent
+  labels:
+    app: icmppingagent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: icmppingagent
+  template:
+    metadata:
+      labels:
+        app: icmppingagent
+    spec:
+      containers:
+      - name: ping-agent
+        image: docker.io/walteraa/pingagent:v0.0.1
+        volumeMounts:
+        - name: cluster-conf
+          mountPath: "/app/env"
+          readOnly: true
+        env:
+          - name: BAR_CONFIG
+            value: /app/env/cluster.conf
+      volumes:
+      - name: cluster-conf
+        secret:
+          secretName: cluster-conf

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aggregator-dpl
+  labels:
+    app: aggregator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aggregator
+  template:
+    metadata:
+      labels:
+        app: aggregator
+    spec:
+      containers:
+      - name: aggregator
+        image: docker.io/walteraa/aggregator-api:v0.0.1
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: cluster-conf
+          mountPath: "/app/env"
+          readOnly: true
+        env:
+          - name: BAR_CONFIG
+            value: "/app/env/cluster.conf"
+          - name: MONGODB_HOST
+            value: "mongo.default.svc.cluster.local"
+          - name: MONGODB_PORT
+            value: "27017"
+          - name: PORT
+            value: "8080"
+      volumes:
+      - name: cluster-conf
+        secret:
+          secretName: cluster-conf

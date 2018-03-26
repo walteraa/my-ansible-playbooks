@@ -1,0 +1,104 @@
+#Playbook to configure k8s masters using OpenStack as cloud provider
+
+- hosts: blackboxes
+  remote_user: ubuntu
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+      become: true
+    - name: Add apt-key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+      become: true
+    - name: Add kubernetes repository
+      apt_repository:
+        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+      become: true
+    - name: Update repository after add kubernetes repo
+      apt:
+        update_cache: yes
+      become: true
+    - name: Install docker
+      apt:
+        name: docker.io
+        state: present
+      become: true
+    - name: Install kubelet
+      apt:
+        name: kubelet
+        state: present
+      become: true
+    - name: Install kubeadm
+      apt:
+        name: kubeadm
+        state: present
+      become: true
+    - name: Install kubectl
+      apt:
+        name: kubectl
+        state: present
+      become: true
+
+#Cleaning up the previous configuration if it exists
+    - name: Reset previous kubernetes init
+      command: kubeadm reset
+      become: true  
+    - name: Removing kubernetes workspace
+      shell: rm -rf $HOME/.kube
+    - name: Removing master config
+      command: rm -rf /etc/kubernetes/master-config
+      become: true
+
+#Configuring kubernetes
+    - name: Transfering Master configuration file
+      copy:
+        src: master-conf 
+        dest: /etc/kubernetes/master-conf
+      become: true
+    - name: Transfering mongo deploy
+      copy:
+        src: mongo-deploy.yaml
+        dest: /home/ubuntu/resources/mongo-dpl.yaml
+    - name: Transfering mongo service
+      copy:
+        src: mongo-svc.yaml
+        dest: /home/ubuntu/resources/mongo-svc.yaml
+    - name: Transfering aggregator resource
+      copy:
+        src: aggregator-dpl.yaml
+        dest: /home/ubuntu/resources/aggregator-dpl.yaml
+    - name: Transfering aggregator service
+      copy:
+        src: aggregator-svc.yaml
+        dest: /home/ubuntu/resources/aggregator.dpl.yaml
+    - name: Copy cluster info
+      copy:
+        src: environment.conf
+        dest: /home/ubuntu/cluster.conf
+    - name: Copy agent deployment
+      copy:
+        src: icmppingagent.yaml
+        dest: /home/ubuntu/resources/icmppingagent.yaml
+#Starting up kubernetes
+    - name: Init kubernetes master
+      command: kubeadm init --config /etc/kubernetes/master-conf
+      become: true
+    - name: Create kubernetes workspace
+      shell: mkdir -p $HOME/.kube
+    - name: Copy kubeconfig file 
+      shell: sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+    - name: Change user owner
+      shell: sudo chown $(id \-u):$(id \-g) $HOME/.kube/config 
+    - name: Init Calico as overlay network
+      command: kubectl apply -f https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml
+    - name: Taint the master node
+      shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+#Creating blackbox resources
+    - name: Creating cluster conf
+      shell: kubectl create secret generic cluster-conf --from-file=/home/ubuntu/cluster.conf
+    - name: Create resources
+      shell: kubectl create -f /home/ubuntu/resources
