@@ -1,0 +1,31 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: boottimeagent
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: boottimeagent
+            image: maysams/boottimeagent
+            env:
+            - name: OS_AUTH_URL
+              value: $OS_AUTH_URL
+            - name: OS_USERNAME
+              value: $OS_USERNAME
+            - name: OS_PASSWORD
+              value: $OS_PASSWORD
+            - name: OS_PROJECT_ID
+              value: $OS_PROJECT_ID
+            - name: OS_USER_DOMAIN_NAME
+              value: $OS_USER_DOMAIN_NAME
+            - name: CLUSTER_ID
+              value: $CLUSTER_ID
+            - name: HOST
+              value: $HOST
+            - name: PORT
+              value: $PORT
+          restartPolicy: OnFailure
