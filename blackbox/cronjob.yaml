@@ -1,0 +1,25 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: boottimeagent
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: boottimeagent
+            image: maysams/boottimeagent
+            volumeMounts:
+            - name: cluster-conf
+              mountPath: "/app/env"
+              readOnly: true
+            env:
+              - name: BAR_CONFIG
+                value: /app/env/cluster.conf
+          volumes:
+          - name: cluster-conf
+            secret:
+              secretName: cluster-conf
+          restartPolicy: OnFailure
