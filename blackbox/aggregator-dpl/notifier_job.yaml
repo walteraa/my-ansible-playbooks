@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: barograph-notifier
+spec:
+  template:
+    spec:
+      containers:
+      - name: barograph-notifier
+        image: maysams/barograph-notifier
+        volumeMounts:
+        - name: aggregator-conf
+          mountPath: "/app/env"
+          readOnly: true
+        env:
+          - name: BAR_CONFIG
+            value: /app/env/environment.conf
+      volumes:
+      - name: aggregator-conf
+        secret:
+          secretName: aggregator-conf
+      restartPolicy: Never
