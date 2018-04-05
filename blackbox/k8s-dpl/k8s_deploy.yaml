@@ -1,0 +1,91 @@
+#Playbook to configure k8s master as taint
+- hosts: blackboxes
+  remote_user: "{{ blackbox_user }}"
+  tasks:
+    - name: Update apt
+      apt:
+        update_cache: yes
+      become: true
+    - name: Add apt-key
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+      become: true
+    - name: Add kubernetes repository
+      apt_repository:
+        repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+      become: true
+    - name: Update repository after add kubernetes repo
+      apt:
+        update_cache: yes
+      become: true
+    - name: Install docker
+      apt:
+        name: docker.io
+        state: present
+      become: true
+    - name: Install kubelet
+      apt:
+        name: kubelet
+        state: present
+      become: true
+    - name: Install kubeadm
+      apt:
+        name: kubeadm
+        state: present
+      become: true
+    - name: Install kubectl
+      apt:
+        name: kubectl
+        state: present
+      become: true
+
+#Cleaning up the previous configuration if it exists
+    - name: Reset previous kubernetes init
+      command: kubeadm reset
+      become: true
+    - name: Removing kubernetes workspace
+      file:
+        state: absent
+        path: $HOME/.kube
+    - name: Create resources workspace
+      file:
+        state: directory
+        path: $HOME/resources
+
+#Configuring kubernetes
+    - name: Copy barograph info
+      copy:
+        src: environment.conf
+        dest: $HOME/environment.conf
+    - name: Copy notifier job deployment
+      copy:
+        src: notifier_job.yaml 
+        dest: $HOME/resources/notifier_job.yaml
+
+#Starting up kubernetes
+    - name: Init kubernetes master
+      command: kubeadm init
+      become: true
+    - name: Create kubernetes workspace
+      file:
+        state: directory
+        path: $HOME/.kube
+    - name: Copy kubeconfig file
+      file:
+        src: /etc/kubernetes/admin.conf
+        path: "{{ ansible_env.HOME }}/.kube/config"
+        state: hard
+        owner: "{{ blackbox_user }}" 
+      become: true
+    - name: Init Calico as overlay network
+      command: kubectl apply -f https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml
+    - name: Taint the master node
+      shell: kubectl taint nodes --all node-role.kubernetes.io/master-
+
+#Notifying barograph
+    - name: Creating cluster conf
+      shell: kubectl create secret generic cluster-conf --from-file=$HOME/environment.conf
+    - name: Create resources
+      shell: kubectl create -f $HOME/resources
