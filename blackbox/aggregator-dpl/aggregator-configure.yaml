@@ -1,4 +1,4 @@
-- hosts: blackboxes
+- hosts: "{{ blackbox_ip }}"
   remote_user: "{{ blackbox_user }}"
   tasks:
     - name: Delete existing resources workspace
