@@ -1,41 +1,45 @@
 - hosts: blackboxes
   remote_user: "{{ blackbox_user }}"
   tasks:
+    - name: Delete existing resources workspace
+      file:
+        state: absent
+        path: "{{ ansible_env.HOME }}/resources-aggregator"
     - name: Create resources workspace
       file:
         state: directory
-        path: $HOME/resources-aggregator
+        path: "{{ ansible_env.HOME }}/resources-aggregator"
     - name: Transfering mongo deploy
       copy:
         src: mongo-deploy.yaml
-        dest: $HOME/resources-aggregator/mongo-dpl.yaml
+        dest: "{{ ansible_env.HOME }}/resources-aggregator/mongo-dpl.yaml"
     - name: Transfering mongo service
       copy:
         src: mongo-svc.yaml
-        dest: $HOME/resources-aggregator/mongo-svc.yaml
+        dest: "{{ ansible_env.HOME }}/resources-aggregator/mongo-svc.yaml"
     - name: Transfering aggregator resource
       copy:
         src: aggregator-dpl.yaml
-        dest: $HOME/resources-aggregator/aggregator-dpl.yaml
+        dest: "{{ ansible_env.HOME }}/resources-aggregator/aggregator-dpl.yaml"
     - name: Transfering aggregator service
       copy:
         src: aggregator-svc.yaml
-        dest: $HOME/resources-aggregator/aggregator.dpl.yaml
+        dest: "{{ ansible_env.HOME }}/resources-aggregator/aggregator.dpl.yaml"
     - name: Copy cluster info
       copy:
         src: environment.conf
-        dest: $HOME/environment.conf
+        dest: "{{ ansible_env.HOME }}/environment.conf"
 
 #Creating blackbox resources
     - name: Creating cluster conf
-      shell: kubectl create secret generic aggregator-conf --from-file=$HOME/environment.conf
+      shell: "kubectl create secret generic aggregator-conf --from-file={{ ansible_env.HOME }}/environment.conf"
     - name: Create resources
-      shell: kubectl create -f $HOME/resources-aggregator
+      shell: "kubectl create -f {{ ansible_env.HOME }}/resources-aggregator"
 
     - name: Copy notifier job deployment
       copy:
         src: notifier_job.yaml
-        dest: $HOME/resources-aggregator/notifier_job.yaml
+        dest: "{{ ansible_env.HOME }}/resources-aggregator/notifier_job.yaml"
 
     - name: Create resources
-      shell: kubectl create -f $HOME/resources-aggregator/notifier_job.yaml
+      shell: "kubectl create -f {{ ansible_env.HOME }}/resources-aggregator/notifier_job.yaml"

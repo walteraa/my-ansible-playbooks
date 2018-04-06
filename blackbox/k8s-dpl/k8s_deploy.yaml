@@ -48,21 +48,21 @@
     - name: Removing kubernetes workspace
       file:
         state: absent
-        path: $HOME/.kube
+        path: "{{ ansible_env.HOME }}/.kube"
     - name: Create resources workspace
       file:
         state: directory
-        path: $HOME/resources
+        path: "{{ ansible_env.HOME }}/resources"
 
 #Configuring kubernetes
     - name: Copy barograph info
       copy:
         src: environment.conf
-        dest: $HOME/environment.conf
+        dest: "{{ ansible_env.HOME }}/environment.conf"
     - name: Copy notifier job deployment
       copy:
         src: notifier_job.yaml 
-        dest: $HOME/resources/notifier_job.yaml
+        dest: "{{ ansible_env.HOME }}/resources/notifier_job.yaml"
 
 #Starting up kubernetes
     - name: Init kubernetes master
@@ -71,7 +71,7 @@
     - name: Create kubernetes workspace
       file:
         state: directory
-        path: $HOME/.kube
+        path: "{{ ansible_env.HOME }}/.kube"
     - name: Copy kubeconfig file
       file:
         src: /etc/kubernetes/admin.conf
@@ -86,6 +86,6 @@
 
 #Notifying barograph
     - name: Creating cluster conf
-      shell: kubectl create secret generic cluster-conf --from-file=$HOME/environment.conf
+      shell: "kubectl create secret generic cluster-conf --from-file={{ ansible_env.HOME }}/environment.conf"
     - name: Create resources
-      shell: kubectl create -f $HOME/resources
+      shell: "kubectl create -f {{ ansible_env.HOME }}/resources"
