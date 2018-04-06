@@ -1,29 +1,29 @@
-- hosts: blackboxes
+- hosts: "{{ blackbox_ip }}"
   remote_user: "{{ blackbox_user }}"
   tasks:
     - name: Create resources workspace
       file:
         state: directory
-        path: $HOME/resources-agent
+        path: "{{ ansible_env.HOME }}/resources-agent"
     - name: Transfering sensor agent cronjob
       copy:
         src: cronjob.yaml
-        dest: $HOME/resources-agent/cronjob.yaml
+        dest: "{{ ansible_env.HOME }}/resources-agent/cronjob.yaml"
     - name: Copy cluster info
       copy:
         src: environment.conf
-        dest: $HOME/environment.conf
+        dest: "{{ ansible_env.HOME }}/environment.conf"
 
 #Creating blackbox resources
     - name: Creating cluster conf
-      shell: kubectl create secret generic agent-conf --from-file=$HOME/environment.conf
+      shell: "kubectl create secret generic agent-conf --from-file={{ ansible_env.HOME }}/environment.conf"
     - name: Create resources
-      shell: kubectl create -f $HOME/resources-agent
+      shell: "kubectl create -f {{ ansible_env.HOME }}/resources-agent"
 
     - name: Copy notifier job deployment
       copy:
         src: notifier_job.yaml
-        dest: $HOME/resources-agent/notifier_job.yaml
+        dest: "{{ ansible_env.HOME }}/resources-agent/notifier_job.yaml"
 
     - name: Create resources
-      shell: kubectl create -f $HOME/resources-agent/notifier_job.yaml
+      shell: "kubectl create -f {{ ansible_env.HOME }}/resources-agent/notifier_job.yaml"
