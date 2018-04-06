@@ -1,0 +1,25 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: sensoragent
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: sensoragent
+            image: maysams/sensoragent
+            volumeMounts:
+            - name: agent-conf
+              mountPath: "/app/env"
+              readOnly: true
+            env:
+              - name: BAR_CONFIG
+                value: /app/env/environment.conf
+          volumes:
+          - name: agent-conf
+            secret:
+              secretName: agent-conf
+          restartPolicy: OnFailure
