@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: sensoragent
 spec:
-  schedule: "*/5 * * * *"
+  schedule: "* * * * *"
   jobTemplate:
     spec:
       template:

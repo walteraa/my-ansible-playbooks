@@ -1,5 +1,5 @@
 #Playbook to configure k8s master as taint
-- hosts: "{{ blackbox_ip }}"
+- hosts: all
   remote_user: "{{ blackbox_user }}"
   tasks:
     - name: Update apt
